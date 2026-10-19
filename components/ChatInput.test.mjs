@@ -15,7 +15,7 @@ const { ChatInput, ModelErrorBanner, ModelScopeWarningBanner, canClearBuiltinCom
 
 const { isBareMcpCommand } = await jiti.import("@/lib/mcp-command.ts");
 const { ModelSelector } = await jiti.import("./ModelSelector.tsx");
-const { clearDraft, getDraft, mergeRestoredSubmissionDraft, mergeRestoredSubmissionText, rekeyDraft, setDraft } = await jiti.import("@/lib/draft-store.ts");
+const { clearDraft, getDraft, mergeRestoredSubmissionDraft, mergeRestoredSubmissionText, rekeyDraft, setDraft } = await jiti.import("@/lib/draft-store");
 const { I18nProvider } = await jiti.import("@/hooks/useI18n");
 
 function renderWithI18n(element) {
@@ -366,6 +366,7 @@ test("renders the compact composer with the standard Send button and no session 
   );
 
   assert.match(html, /<textarea/);
+  assert.match(html, /class="native-primary-button"[^>]*aria-label="Send"/);
   assert.match(html, />Send<\/button>/);
   assert.equal((html.match(/<button\b/g) ?? []).length, 1);
   assert.doesNotMatch(html, /type="file"|Attach image|Change tool preset/);

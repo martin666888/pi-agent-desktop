@@ -32,6 +32,7 @@ import { isBareMcpCommand, isBuiltinMcpCommand } from "@/lib/mcp-command";
 import { FolderIcon, getFileIcon } from "./FileIcons";
 import { ImagePreview } from "./ImagePreview";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { useMenuNavigation } from "@/hooks/useMenuNavigation";
 import { useEnterSendMode } from "@/hooks/useEnterSendMode";
 import { useI18n } from "@/hooks/useI18n";
 import type { ReactNode } from "react";
@@ -840,6 +841,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
   const [value, setValue] = useState(() => (draftKey ? getDraft(draftKey)?.value ?? "" : ""));
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [automationDropdownOpen, setAutomationDropdownOpen] = useState(false);
+  const [toolDropdownOpen, setToolDropdownOpen] = useState(false);
   const [thinkingDropdownOpen, setThinkingDropdownOpen] = useState(false);
   const [controlsMenuOpen, setControlsMenuOpen] = useState(false);
   const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
@@ -875,6 +877,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const projectDropdownRef = useRef<HTMLDivElement>(null);
+  const toolDropdownRef = useRef<HTMLDivElement>(null);
   const thinkingDropdownRef = useRef<HTMLDivElement>(null);
   const automationDropdownRef = useRef<HTMLDivElement>(null);
   const controlsMenuRef = useRef<HTMLDivElement>(null);
@@ -1934,7 +1937,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
   const runSettingsLabel = [
     onThinkingLevelChange ? thinkingDisplayLabel : null,
     chatOnly ? t("chat.chatOnly") : null,
-    onToolPresetChange && (!onThinkingLevelChange || rawToolPresetLabel !== "configured") ? toolPresetLabel : null,
+    !onThinkingLevelChange && chatOnly ? toolPresetLabel : null,
   ].filter(Boolean).join(" · ");
   const runSettingsTitle = [
     onThinkingLevelChange
@@ -1947,8 +1950,12 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
   ].filter(Boolean).join(" · ");
 
   // Close dropdowns on outside click
+  useMenuNavigation(toolDropdownOpen, toolDropdownRef, () => setToolDropdownOpen(false));
+  useMenuNavigation(thinkingDropdownOpen, thinkingDropdownRef, () => setThinkingDropdownOpen(false));
+  useMenuNavigation(projectDropdownOpen, projectDropdownRef, () => setProjectDropdownOpen(false));
   useEffect(() => {
     const handler = (e: MouseEvent) => {
+      if (toolDropdownRef.current && !toolDropdownRef.current.contains(e.target as Node)) setToolDropdownOpen(false);
       if (thinkingDropdownRef.current && !thinkingDropdownRef.current.contains(e.target as Node)) {
         setThinkingDropdownOpen(false);
       }
@@ -2218,6 +2225,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
           {historyMenuOpen && inputHistory.length > 0 && (
             <div
               ref={historyMenuRef}
+              className="native-popover app-menu app-suggestion-menu"
               style={{
                 position: "absolute",
                 left: 0,
@@ -2304,7 +2312,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
           )}
           {slashMenuOpen && slashQuery !== null && (
             <div
-              className="native-popover"
+              className="native-popover app-menu app-suggestion-menu"
               ref={slashMenuRef}
               style={{
                 position: "absolute",
@@ -2370,6 +2378,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
                         <span style={{ fontFamily: "var(--font-mono)", fontWeight: 500 }}>{group.items.length}</span>
                       </div>
                       <div
+                        className="app-menu-items"
                         style={{
                           display: "grid",
                           gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
@@ -2401,7 +2410,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
                                 justifyContent: "center",
                                 padding: "9px 10px",
                                 border: `1px solid ${active ? "var(--accent)" : "var(--border)"}`,
-                                borderRadius: 7,
+                                borderRadius: 8,
                                 background: active ? "var(--bg-selected)" : "var(--bg-panel)",
                                 color: "var(--text)",
                                 cursor: "pointer",
@@ -2475,6 +2484,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
             return (
               <div
                 ref={atMenuRef}
+                className="native-popover app-menu app-suggestion-menu"
                 style={{
                   position: "absolute",
                   left: 0,
@@ -2708,7 +2718,8 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
               // The main composer's Send is a round icon whose two states (quiet /
               // filled) are the "ready to send" signal; the compact quote composer
               // sits in a dialog, where a labelled button reads better.
-              className={compact ? "native-primary-button" : "composer-send-button"}
+              type="button"
+              className={compact ? "native-primary-button" : "native-primary-button composer-send-button"}
               onClick={handleSend}
               disabled={!canSend}
               title={t("chat.send")}
@@ -2735,7 +2746,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
 
         {/* Bottom bar: left | center (context) | right */}
         {!compact && <div className="chat-composer-controls" style={{
-          marginTop: 8,
+          marginTop: 6,
           display: isNarrow ? "grid" : "flex",
           gridTemplateColumns: isNarrow ? "auto minmax(0, 1fr) auto" : undefined,
           alignItems: "center",
@@ -2808,7 +2819,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
                   width: 32, height: 32, marginRight: 6,
                   background: "color-mix(in srgb, var(--danger) 8%, transparent)",
                   border: "var(--hairline) solid color-mix(in srgb, var(--danger) 30%, transparent)",
-                  borderRadius: 9, color: "var(--danger)", cursor: "pointer",
+                  borderRadius: 8, color: "var(--danger)", cursor: "pointer",
                 }}
               >
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
@@ -2835,7 +2846,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
                   width: "100%",
                   height: 32,
                   padding: "0 6px",
-                  borderRadius: 9,
+                  borderRadius: 8,
                   cursor: controlsMenuOpen ? "default" : "pointer",
                   fontSize: 12,
                   fontWeight: 500,
@@ -2862,22 +2873,21 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
                 flexWrap: "nowrap",
                 justifyContent: "flex-end",
                 border: "var(--hairline) solid color-mix(in srgb, var(--border) 72%, transparent)",
-                borderRadius: 10,
+                borderRadius: 12,
                 background: "color-mix(in srgb, var(--bg-panel) 92%, var(--bg))",
                 boxShadow: "0 8px 24px rgba(0,0,0,0.14)",
                 backdropFilter: "blur(10px)",
               } : null),
             }}>
-            {/* Run settings: reasoning level and tool preset share one chip and
-                one menu. Reasoning stays changeable mid-run (#851); the tool
-                section dims while a run is active instead of vanishing. */}
-            {(onThinkingLevelChange || onToolPresetChange || chatOnly) && (
+            {/* Keep reasoning and Config as separate, consistent option menus. */}
+            {(onThinkingLevelChange || chatOnly) && (
               <div ref={thinkingDropdownRef} style={{ position: "relative" }}>
                 <button
                   className="native-toolbar-button"
                   onClick={() => setThinkingDropdownOpen((v) => !v)}
                   title={runSettingsTitle}
-                  aria-label={t("chat.runSettings")}
+                  aria-label={t("chat.changeReasoningLabel")}
+                  aria-haspopup="listbox"
                   aria-expanded={thinkingDropdownOpen}
                   style={{
                     display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
@@ -2886,7 +2896,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
                     height: 32,
                     background: thinkingDropdownOpen ? "var(--bg-hover)" : "none",
                     border: "none",
-                    borderRadius: 9,
+                    borderRadius: 8,
                     color: "var(--text-muted)",
                     cursor: "pointer",
                     fontSize: 12,
@@ -2903,7 +2913,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
                   const vh = typeof window !== "undefined" ? window.visualViewport?.height ?? window.innerHeight : 800;
                   const maxH = Math.max(120, vh * 0.6);
                   return (
-                  <div className="native-popover composer-run-menu" role="menu" style={{
+                  <div className="native-popover app-menu composer-run-menu" role="listbox" style={{
                     position: "absolute",
                     bottom: "calc(100% + 6px)",
                     ...(isMobile ? { left: 0 } : { right: 0 }),
@@ -2962,42 +2972,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
                       })}
                       </>
                     )}
-                    {onToolPresetChange && (
-                      <>
-                      <div className="composer-menu-heading" data-separated={onThinkingLevelChange ? true : undefined}>
-                        {t("chat.toolsHeading")}
-                        {isStreaming && <span className="composer-menu-heading-note">{t("chat.toolsLockedWhileRunning")}</span>}
-                      </div>
-                      {TOOL_PRESETS.map((lvl) => {
-                        const preset = TOOL_PRESET_MAP[lvl];
-                        const isActive = (toolPreset ?? "configured") === preset;
-                        let desc: string;
-                        if (lvl === "configured") desc = t("chat.configuredTools");
-                        else if (lvl === "chat-only") desc = t("chat.chatOnly");
-                        else if (lvl === "read-only") desc = t("chat.readOnlyTools", { count: 4 });
-                        else if (lvl === "default") desc = t("chat.builtInTools", { count: 4 });
-                        else desc = t("chat.allBuiltInTools");
-                        return (
-                          <button
-                            key={lvl}
-                            type="button"
-                            role="menuitemradio"
-                            aria-checked={isActive}
-                            className="composer-menu-row"
-                            data-active={isActive || undefined}
-                            disabled={isStreaming}
-                            onClick={() => { setThinkingDropdownOpen(false); if (!isActive) onToolPresetChange(preset); }}
-                          >
-                            {isActive
-                              ? <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="1.5 5 4 7.5 8.5 2.5" /></svg>
-                              : <span style={{ width: 10, flexShrink: 0 }} />}
-                            <span style={{ flex: 1 }}>{lvl}</span>
-                            <span style={{ fontSize: 11, color: "var(--text-dim)", marginLeft: 8 }}>{desc}</span>
-                          </button>
-                        );
-                      })}
-                      </>
-                    )}
+
                     {chatOnly && (
                       <>
                         <div className="composer-menu-heading" data-separated={onThinkingLevelChange ? true : undefined}>
@@ -3056,6 +3031,81 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
               </div>
             )}
 
+            {onToolPresetChange && (
+              <div ref={toolDropdownRef} style={{ position: "relative" }}>
+                <button
+                  className="native-toolbar-button"
+                  onClick={() => !isStreaming && setToolDropdownOpen((v) => !v)}
+                  disabled={isStreaming}
+                  title={t("chat.changeToolPreset") + `: ${toolPresetLabel}`}
+                  aria-label={t("chat.changeToolPreset")}
+                  aria-haspopup="listbox"
+                  aria-expanded={toolDropdownOpen}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                    padding: (isCompact && !controlsMenuOpen) ? "0 6px" : "8px 12px",
+                    width: (isCompact && !controlsMenuOpen) ? 32 : undefined,
+                    height: 32,
+                    background: toolDropdownOpen ? "var(--bg-hover)" : "none",
+                    border: "none",
+                    borderRadius: 8,
+                    color: "var(--text-muted)",
+                    cursor: isStreaming ? "not-allowed" : "pointer",
+                    fontSize: 12,
+                    opacity: isStreaming ? 0.5 : 1,
+                    transition: "background 0.12s, color 0.12s",
+                  }}
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                  </svg>
+                  {(!isCompact || controlsMenuOpen) && <span style={{ whiteSpace: "nowrap" }}>{toolPresetLabel}</span>}
+                </button>
+                {toolDropdownOpen && (() => {
+                  const vh = typeof window !== "undefined" ? window.visualViewport?.height ?? window.innerHeight : 800;
+                  const maxH = Math.max(120, vh * 0.6);
+                  const vw = window.innerWidth;
+                  const width = Math.min(304, vw - 32);
+                  const anchorRight = toolDropdownRef.current?.getBoundingClientRect().right ?? vw - 16;
+                  const left = Math.max(16, Math.min(anchorRight - width, vw - width - 16));
+                  return (
+                  <div className="native-popover app-menu composer-tool-menu" role="listbox" aria-label={t("chat.changeToolPreset")} style={{
+                    position: "absolute", bottom: "calc(100% + 6px)", right: anchorRight - left - width,
+                    zIndex: 100, background: "var(--bg)", border: "var(--hairline) solid var(--border)",
+                    borderRadius: 8, boxShadow: "0 -4px 16px rgba(0,0,0,0.10)",
+                    overflow: "hidden", minWidth: 120,
+                    maxHeight: maxH, display: "flex", flexDirection: "column",
+                  }}>
+                    <div style={{ minHeight: 0, overflowY: "auto" }}>
+                    {TOOL_PRESETS.map((lvl) => {
+                      const preset = TOOL_PRESET_MAP[lvl];
+                      const isActive = (toolPreset ?? "configured") === preset;
+                      let desc: string;
+                      if (lvl === "configured") desc = t("chat.configuredTools");
+                      else if (lvl === "chat-only") desc = t("chat.chatOnly");
+                      else if (lvl === "read-only") desc = t("chat.readOnlyTools", { count: 4 });
+                      else if (lvl === "default") desc = t("chat.builtInTools", { count: 4 });
+                      else desc = t("chat.allBuiltInTools");
+                      return (
+                        <SelectorRow
+                          key={lvl}
+                          active={isActive}
+                          onSelect={() => { setToolDropdownOpen(false); if (!isActive) onToolPresetChange(preset); }}
+                        >
+                          <span className="app-menu-copy">
+                            <span>{lvl}</span>
+                            <small>{desc}</small>
+                          </span>
+                        </SelectorRow>
+                      );
+                    })}
+                    </div>
+                  </div>
+                  );
+                })()}
+              </div>
+            )}
+
             {(automationKnown || canCompactNow) && (
               <SessionAutomationMenu
                 menuRef={automationDropdownRef}
@@ -3077,7 +3127,7 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput({
                   display: "flex", alignItems: "center", gap: 6,
                   padding: "8px 14px",
                   height: 32,
-                  borderRadius: 9,
+                  borderRadius: 8,
                   cursor: "pointer",
                   fontSize: 12, fontWeight: 600,
                   whiteSpace: "nowrap", letterSpacing: "-0.01em",
